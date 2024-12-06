@@ -80,6 +80,7 @@ async def test_a(dut):
 #    print(tester.input_mon.transactions)
 #    print(tester.output_mon.transactions)
     assert tester.input_mon.transactions==tester.output_mon.transactions, f"Transaction Count doesn't match! :/"
+    print(tester.scoreboard.expected)
     raise tester.scoreboard.result
 
 

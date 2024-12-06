@@ -60,7 +60,7 @@ async def test_a(dut):
     
     data = {'type':'burst', "contents":{"data": samples}}
     tester.input_driver.append(data)
-    await ClockCycles(dut.s00_axis_aclk, 5000)
+    await ClockCycles(dut.s00_axis_aclk, 500)
 #    print(tester.output_mon.seen, len(tester.output_mon.seen))
 #    print(tester.input_mon.seen, len(tester.input_mon.seen))
     # access internal elements as needed (or do them inside of the class)
