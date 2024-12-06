@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1733512390" />
+    <testcase name="testone" classname="img_feed" file="c:\Users\raben\Desktop\Schuul\6S\stuff\fpstuf\6s_finalproj\sim\img_feed.py" lineno="130" time="0.07464933395385742" sim_time_ns="2005.001" ratio_time="26858.926849090712" />
+  </testsuite>
+</testsuites>
