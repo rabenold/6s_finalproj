@@ -7,30 +7,41 @@ from cocotb_bus.scoreboard import Scoreboard
 import numpy as np
 from scipy.fft import fft, fftfreq
 
-exact_output = np.array([[-4.15375000e+02, -3.01857173e+01, -6.11970620e+01,
-         2.72393225e+01,  5.61250000e+01, -2.00951738e+01,
-        -2.38764710e+00,  4.61815442e-01],
-       [ 4.46552370e+00, -2.18574393e+01, -6.07580381e+01,
-         1.02536368e+01,  1.31451101e+01, -7.08741801e+00,
-        -8.53543671e+00,  4.87688850e+00],
-       [-4.68344847e+01,  7.37059735e+00,  7.71293876e+01,
-        -2.45619822e+01, -2.89116884e+01,  9.93352095e+00,
-         5.41681547e+00, -5.64895086e+00],
-       [-4.85349667e+01,  1.20683609e+01,  3.40997672e+01,
-        -1.47594111e+01, -1.02406068e+01,  6.29596744e+00,
-         1.83116505e+00,  1.94593651e+00],
-       [ 1.21250000e+01, -6.55344993e+00, -1.31961210e+01,
-        -3.95142773e+00, -1.87500000e+00,  1.74528445e+00,
-        -2.78722825e+00,  3.13528230e+00],
-       [-7.73474368e+00,  2.90546138e+00,  2.37979576e+00,
-        -5.93931394e+00, -2.37779671e+00,  9.41391596e-01,
-         4.30371334e+00,  1.84869103e+00],
-       [-1.03067401e+00,  1.83067444e-01,  4.16815472e-01,
-        -2.41556137e+00, -8.77793920e-01, -3.01930655e+00,
-         4.12061242e+00, -6.61948454e-01],
-       [-1.65375602e-01,  1.41607122e-01, -1.07153639e+00,
-        -4.19291208e+00, -1.17031409e+00, -9.77610793e-02,
-         5.01269392e-01,  1.67545882e+00]])
+# exact_output = np.array([[-4.15375000e+02, -3.01857173e+01, -6.11970620e+01,
+#          2.72393225e+01,  5.61250000e+01, -2.00951738e+01,
+#         -2.38764710e+00,  4.61815442e-01],
+#        [ 4.46552370e+00, -2.18574393e+01, -6.07580381e+01,
+#          1.02536368e+01,  1.31451101e+01, -7.08741801e+00,
+#         -8.53543671e+00,  4.87688850e+00],
+#        [-4.68344847e+01,  7.37059735e+00,  7.71293876e+01,
+#         -2.45619822e+01, -2.89116884e+01,  9.93352095e+00,
+#          5.41681547e+00, -5.64895086e+00],
+#        [-4.85349667e+01,  1.20683609e+01,  3.40997672e+01,
+#         -1.47594111e+01, -1.02406068e+01,  6.29596744e+00,
+#          1.83116505e+00,  1.94593651e+00],
+#        [ 1.21250000e+01, -6.55344993e+00, -1.31961210e+01,
+#         -3.95142773e+00, -1.87500000e+00,  1.74528445e+00,
+#         -2.78722825e+00,  3.13528230e+00],
+#        [-7.73474368e+00,  2.90546138e+00,  2.37979576e+00,
+#         -5.93931394e+00, -2.37779671e+00,  9.41391596e-01,
+#          4.30371334e+00,  1.84869103e+00],
+#        [-1.03067401e+00,  1.83067444e-01,  4.16815472e-01,
+#         -2.41556137e+00, -8.77793920e-01, -3.01930655e+00,
+#          4.12061242e+00, -6.61948454e-01],
+#        [-1.65375602e-01,  1.41607122e-01, -1.07153639e+00,
+#         -4.19291208e+00, -1.17031409e+00, -9.77610793e-02,
+#          5.01269392e-01,  1.67545882e+00]])
+
+
+exact_output = [[-416,  -31,  -62,   27,   56,  -21,   -3,    0],
+ [   4,  -22,  -61,   10,   13,   -8,   -9,    4],
+ [ -47,    7,   77,  -25,  -29,    9,    5,   -6],
+ [ -49,   12,   34,  -15,  -11,    6,    1,    1],
+ [  12,   -7,  -14,   -4,   -2,    1,   -3,    3],
+ [  -8,    2,    2,   -6,   -3,    0,    4,    1],
+ [  -1,    0,    0,   -3,   -1,   -4,    4,   -1],
+ [  -1,    0,   -2,   -5,   -2,   -1,    0,    1]]
+
 class Tester:
     """
     Checker of a split square sum instance
@@ -49,7 +60,7 @@ class Tester:
         # Create a scoreboard on the stream_out bus
         self.expected_output = [] #contains list of expected outputs (Growing)
         self.scoreboard = Scoreboard(self.dut)#, fail_immediately=False)
-#        self.scoreboard.add_interface(self.output_mon, self.expected_output, compare_fn=self.compare)
+        self.scoreboard.add_interface(self.output_mon, self.expected_output, compare_fn=self.compare)
         self.counter = 0
  
     def start(self) -> None:
@@ -85,13 +96,12 @@ class Tester:
       self.counter += 1
 
 
-#    def compare(self,got):
-#        print(got)
-#        print(exp)
-#        for i, output in enumerate(self.expected_output):
-#            if output['count'] == got['count']:
-#                break
-#        exp = self.expected_output.pop(i)
-#        #exp = self.expected_output[-1]
-#        print(f"got {int(got['data'])} and expected {exp['data']}")
-#        assert abs(int(got['data']) -  exp['data']) <= 1, f"got {int(got['data'])} and expected {exp['data']}"
+    def compare(self,got):
+      idx = got['count']
+      actual_output = got['data'].signed_integer
+      expected_output = self.expected_output.pop(0)
+      
+      # print(f"Expected {expected_output}, got {actual_output} giving {abs(actual_output-expected_output)}")
+      assert abs(actual_output-expected_output) < 1, f"Expected {expected_output}, got {actual_output} which wasn't close enough"
+      
+

@@ -120,13 +120,12 @@ module dct_block #
   genvar u,v;
   generate
     for (u = 0; u < 8; u=u+1) begin : horiz_loop // <-- example block name  
-     // generate
         for (v = 0; v < 8; v=v+1) begin : vert_loop
           minimum_coded_unit #(.U_VALUE(u), .V_VALUE(v))
             block_unit(
                 .clk_in(s00_axis_aclk),
                 .rst_in(~s00_axis_aresetn),
-                .ready_in(s00_axis_tvalid),//1'b1),//ready_in[u][v]),
+                .ready_in(s00_axis_tvalid),
                 .pixel_val(pixel),
                 .x(current_x),
                 .y(current_y),
@@ -137,14 +136,14 @@ module dct_block #
             always_ff @(posedge s00_axis_aclk) begin
                 if (~s00_axis_aresetn) begin
                     ready_in[u][v] <= 0;
-                    //ready_out[u][v] <= 0;
-                    //val_out[u][v] <= 0;
                 end else begin
-                    if (s00_axis_tvalid && m00_axis_tready) begin
-                        if (current_x == u && current_y == v && ~no_new_data) begin
-                            ready_in[u][v] = 1;
-                        end else begin
-                            ready_in[u][v] = 0;
+                    if (m00_axis_tready) begin
+                        if (s00_axis_tvalid) begin
+                            if (current_x == u && current_y == v && ~no_new_data) begin
+                                ready_in[u][v] = 1;
+                            end else begin
+                                ready_in[u][v] = 0;
+                            end
                         end
 
                         if (ready_out[u][v]) begin
@@ -154,11 +153,11 @@ module dct_block #
                 end
             end
         end
-     // endgenerate
     end
   endgenerate
 
   logic [2:0] out_x_count, out_y_count;
+  logic delivered_last;
 
   always_ff @(posedge s00_axis_aclk) begin
     if (~s00_axis_aresetn) begin
@@ -168,33 +167,30 @@ module dct_block #
         no_new_data <= 0;
         out_x_count <= 0;
         out_y_count <= 0;
-        state <= 0;
+        m00_axis_tvalid <= 0;
+        delivered_last <= 0;
     end else begin
         if (m00_axis_tready) begin
             if (s00_axis_tvalid) begin
-                //if (state == 0) begin
-                //    current_x <= 0;
-                //    current_y <= 0;
-                //    state <= 2'd1;
-                //end else begin
-                    current_x <= current_x + 1;
-                    if (current_x == 7) begin
-                        current_y <= current_y+1;
-                        if (current_y == 7) begin
-                            no_new_data <= 1;
-                        end
+                current_x <= current_x + 1;
+                if (current_x == 7) begin
+                    current_y <= current_y+1;
+                    if (current_y == 7) begin
+                        no_new_data <= 1;
                     end
-                //end
-                
+                end
             end
             if (completed_dct == 64'hffff_ffff_ffff_ffff) begin
                 
                 m00_axis_tdata <= val_out[out_x_count][out_y_count];
+
                 if (out_x_count==7 && out_y_count == 7) begin
-                    m00_axis_tvalid <= 1'b0;
-                    completed_dct <= 0;
-                end else begin
+                    delivered_last <= 1'b1;
+                end 
+                if (~delivered_last) begin
                     m00_axis_tvalid <= 1'b1;
+                end else begin
+                    m00_axis_tvalid <= 1'b0;
                 end
                 if (out_x_count == 7) begin
                     out_y_count <= out_y_count+1;
