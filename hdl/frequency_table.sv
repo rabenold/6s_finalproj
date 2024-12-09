@@ -2,7 +2,9 @@
 `default_nettype none
 
 
-module frequency_table #(parameter TABLE_SIZE = 256, parameter DATA_WIDTH = 8)(
+// 10 bit or 12 bit data width or 16 
+// 16 for safety 
+module frequency_table #(parameter TABLE_SIZE = 256, parameter DATA_WIDTH = 16)(
     input logic clk,
     input rst_in,
     input logic [DATA_WIDTH-1:0] data_in,
@@ -25,6 +27,9 @@ always_ff @(posedge clk) begin
 end 
 endmodule 
 
+//have raw data that's been compressed. jpg file headers and stuff 
+// put on hardware 
+// 
 
 `default_nettype wire
 
