@@ -26,13 +26,15 @@ logic swapped;
 // O(n^2) where N is the size of the list... yikes
 always_ff @(posedge clk_in) begin
     if (rst_in) begin // Reset the system
+        state<=IDLE; 
         next_state <= IDLE;
         i <= 0;
         j <= 0;
         done <= 1'b0;
         swapped <= 1'b0;
         for (int k = 0; k < TABLE_SIZE; k++) begin
-            sorted_table[k] <= 0;
+            temp[k] <= 0;
+            sorted_table[k]<=0;
         end
     end else begin
         state <= next_state;
@@ -87,5 +89,5 @@ always_ff @(posedge clk_in) begin
     end
 end
 
-`default_nettype wire
 endmodule
+`default_nettype wire

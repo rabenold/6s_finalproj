@@ -38,34 +38,66 @@ async def reset(dut):
 async def test_one(dut):
     print("========= Starting Test =========")
     arr = []
-    for i in range(256):
+    arr_len = 256
+    for i in range(arr_len):
         arr.append(random.randint(0,65535))  #list of 16 bit ints 
     # arr done 
-    assert(len(arr) == 256), "FUCK YOU"
+    assert(len(arr) == arr_len), "FUCK YOU"
     print("========= Array Generated =========")
     await cocotb.start(generate_clock(dut.clk_in))
-    print("CLOCK GENERATEDfin")
+    print("CLOCK GENERATED")
     await reset(dut)
-    print("STARTING SORT")
+    t_start = gst() 
+    print(f"STARTING SORT at t = {t_start}")
     while not dut.done.value:
         dut.freq_table_in.value = arr
         await ClockCycles(dut.clk_in,1)
-    print(f"SORTED DONE with val = {dut.done.value}")
+    t_end = gst()
+    print(f"SORTED DONE at t = {t_end}")
     sorted_arr = dut.sorted_table.value 
-    print('=========7\n\n\n')
-    # print(type(sorted_arr))
-    # print(type(sorted_arr[0]))
-    print(sorted_arr[:10])
     int_arr = [entry.integer for entry in sorted_arr]
     int_arr_sorted = sorted(int_arr)
     sorted_binary_arr = [bin(x)[2:].zfill(16) for x in int_arr_sorted]
 
     arr.sort()
     bin_arr = [bin(x)[2:] for x in arr]
-    print(bin_arr[:10])
-    # assert(bin_arr == sorted_binary_arr)
+    bin_arr_padded = [x.zfill(16) for x in bin_arr]
 
+    for k, x in zip(sorted_binary_arr,bin_arr_padded):
+        assert(k==x),"sorting bad womp womp"
 
+    print("========= Passed Test =========")
+    print(f"========= SORTED {arr_len} entries in {t_end-t_start} UNITS =========")
+    
+
+    arr2 = []
+    for q in range(arr_len):
+        arr2.append(random.randint(0,65535))  #list of 16 bit ints 
+    # arr done
+    # 
+    #  
+    await reset(dut)
+    await ClockCycles(dut.clk_in,1)
+    t_start = gst() 
+    print(f"STARTING SORT at t = {t_start}")
+    while not dut.done.value:
+        dut.freq_table_in.value = arr2
+        await ClockCycles(dut.clk_in,1)
+    t_end = gst()
+    print(f"SORTED DONE at t = {t_end}")
+    sorted_arr2 = dut.sorted_table.value 
+    int_arr2 = [entry.integer for entry in sorted_arr2]
+    int_arr_sorted2 = sorted(int_arr2)
+    sorted_binary_arr2 = [bin(x)[2:].zfill(16) for x in int_arr_sorted2]
+
+    arr2.sort()
+    bin_arr2 = [bin(x)[2:] for x in arr2]
+    bin_arr_padded2 = [x.zfill(16) for x in bin_arr2]
+
+    for a, b in zip(sorted_binary_arr2,bin_arr_padded2):
+        assert(a==b),"sorting bad womp womp"
+    print(f"========= SORTED {arr_len} entries in {t_end-t_start} UNITS =========")
+        
 def brick_tester():
     """Run the TMDS runner. Boilerplate code"""
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")
