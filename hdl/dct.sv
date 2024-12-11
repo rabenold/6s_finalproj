@@ -84,7 +84,8 @@ endmodule
 module dct_block #
   (
     parameter integer C_S00_AXIS_TDATA_WIDTH  = 64,
-    parameter integer C_M00_AXIS_TDATA_WIDTH  = 64
+    parameter integer C_M00_AXIS_TDATA_WIDTH  = 64,
+    parameter IS_CHROMINANCE = 0,
   )
   (
   // Ports of Axi Slave Bus Interface S00_AXIS
@@ -105,6 +106,7 @@ module dct_block #
   logic ready_in [7:0][7:0];
   logic ready_out [7:0][7:0];
   logic signed [63:0] val_out [7:0][7:0];
+  logic [9:0] quant_divisor [7:0][7:0];
   logic [2:0] current_x, current_y;
   logic [7:0] pixel;
   logic [63:0] completed_dct;
@@ -133,6 +135,13 @@ module dct_block #
                 .ready_out(ready_out[u][v])
             );
 
+            quantizer_lut quantize_value(
+                .u(u), 
+                .v(v), 
+                .is_chrominance(IS_CHROMINANCE), 
+                .inv_divisor(quant_divisor[u][v])
+            );
+
             always_ff @(posedge s00_axis_aclk) begin
                 if (~s00_axis_aresetn) begin
                     ready_in[u][v] <= 0;
@@ -147,7 +156,8 @@ module dct_block #
                         end
 
                         if (ready_out[u][v]) begin
-                            completed_dct[(v<<3)+u] = 1'b1;
+                            
+                            completed_dct[(v<<3)+u] <= 1'b1;
                         end
                     end
                 end
@@ -247,6 +257,273 @@ module cosine_lut(input wire [4:0] phase_in, input wire clk_in, input wire rst_i
      endcase
    end
   end
+endmodule
+
+module quantizer_lut(input wire [2:0] u, input wire [2:0] v, input wire is_chrominance, output logic[9:0] inv_divisor);
+  always_comb begin
+    if (~is_chrominance) begin
+        if (u==0 && v==0 ) begin
+            inv_divisor = 64;
+        end else if (u==1 && v==0 ) begin
+            inv_divisor = 93;
+        end else if (u==2 && v==0 ) begin
+            inv_divisor = 102;
+        end else if (u==3 && v==0 ) begin
+            inv_divisor = 64;
+        end else if (u==4 && v==0 ) begin
+            inv_divisor = 43;
+        end else if (u==5 && v==0 ) begin
+            inv_divisor = 26;
+        end else if (u==6 && v==0 ) begin
+            inv_divisor = 20;
+        end else if (u==7 && v==0 ) begin
+            inv_divisor = 17;
+        end else if (u==0 && v==1 ) begin
+            inv_divisor = 85;
+        end else if (u==1 && v==1 ) begin
+            inv_divisor = 85;
+        end else if (u==2 && v==1 ) begin
+            inv_divisor = 73;
+        end else if (u==3 && v==1 ) begin
+            inv_divisor = 54;
+        end else if (u==4 && v==1 ) begin
+            inv_divisor = 39;
+        end else if (u==5 && v==1 ) begin
+            inv_divisor = 18;
+        end else if (u==6 && v==1 ) begin
+            inv_divisor = 17;
+        end else if (u==7 && v==1 ) begin
+            inv_divisor = 19;
+        end else if (u==0 && v==2 ) begin
+            inv_divisor = 73;
+        end else if (u==1 && v==2 ) begin
+            inv_divisor = 79;
+        end else if (u==2 && v==2 ) begin
+            inv_divisor = 64;
+        end else if (u==3 && v==2 ) begin
+            inv_divisor = 43;
+        end else if (u==4 && v==2 ) begin
+            inv_divisor = 26;
+        end else if (u==5 && v==2 ) begin
+            inv_divisor = 18;
+        end else if (u==6 && v==2 ) begin
+            inv_divisor = 15;
+        end else if (u==7 && v==2 ) begin
+            inv_divisor = 18;
+        end else if (u==0 && v==3 ) begin
+            inv_divisor = 73;
+        end else if (u==1 && v==3 ) begin
+            inv_divisor = 60;
+        end else if (u==2 && v==3 ) begin
+            inv_divisor = 47;
+        end else if (u==3 && v==3 ) begin
+            inv_divisor = 35;
+        end else if (u==4 && v==3 ) begin
+            inv_divisor = 20;
+        end else if (u==5 && v==3 ) begin
+            inv_divisor = 12;
+        end else if (u==6 && v==3 ) begin
+            inv_divisor = 13;
+        end else if (u==7 && v==3 ) begin
+            inv_divisor = 17;
+        end else if (u==0 && v==4 ) begin
+            inv_divisor = 57;
+        end else if (u==1 && v==4 ) begin
+            inv_divisor = 47;
+        end else if (u==2 && v==4 ) begin
+            inv_divisor = 28;
+        end else if (u==3 && v==4 ) begin
+            inv_divisor = 18;
+        end else if (u==4 && v==4 ) begin
+            inv_divisor = 15;
+        end else if (u==5 && v==4 ) begin
+            inv_divisor = 9;
+        end else if (u==6 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==4 ) begin
+            inv_divisor = 13;
+        end else if (u==0 && v==5 ) begin
+            inv_divisor = 43;
+        end else if (u==1 && v==5 ) begin
+            inv_divisor = 29;
+        end else if (u==2 && v==5 ) begin
+            inv_divisor = 19;
+        end else if (u==3 && v==5 ) begin
+            inv_divisor = 16;
+        end else if (u==4 && v==5 ) begin
+            inv_divisor = 13;
+        end else if (u==5 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==5 ) begin
+            inv_divisor = 9;
+        end else if (u==7 && v==5 ) begin
+            inv_divisor = 11;
+        end else if (u==0 && v==6 ) begin
+            inv_divisor = 21;
+        end else if (u==1 && v==6 ) begin
+            inv_divisor = 16;
+        end else if (u==2 && v==6 ) begin
+            inv_divisor = 13;
+        end else if (u==3 && v==6 ) begin
+            inv_divisor = 12;
+        end else if (u==4 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==6 ) begin
+            inv_divisor = 8;
+        end else if (u==6 && v==6 ) begin
+            inv_divisor = 9;
+        end else if (u==7 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==7 ) begin
+            inv_divisor = 14;
+        end else if (u==1 && v==7 ) begin
+            inv_divisor = 11;
+        end else if (u==2 && v==7 ) begin
+            inv_divisor = 11;
+        end else if (u==3 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==7 ) begin
+            inv_divisor = 9;
+        end else if (u==5 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==7 ) begin
+            inv_divisor = 10;
+        end
+    end else begin
+        if (u==0 && v==0 ) begin
+            inv_divisor = 60;
+        end else if (u==1 && v==0 ) begin
+            inv_divisor = 57;
+        end else if (u==2 && v==0 ) begin
+            inv_divisor = 43;
+        end else if (u==3 && v==0 ) begin
+            inv_divisor = 22;
+        end else if (u==4 && v==0 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==0 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==0 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==0 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==1 ) begin
+            inv_divisor = 57;
+        end else if (u==1 && v==1 ) begin
+            inv_divisor = 49;
+        end else if (u==2 && v==1 ) begin
+            inv_divisor = 39;
+        end else if (u==3 && v==1 ) begin
+            inv_divisor = 16;
+        end else if (u==4 && v==1 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==1 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==1 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==1 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==2 ) begin
+            inv_divisor = 43;
+        end else if (u==1 && v==2 ) begin
+            inv_divisor = 39;
+        end else if (u==2 && v==2 ) begin
+            inv_divisor = 18;
+        end else if (u==3 && v==2 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==2 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==2 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==2 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==2 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==3 ) begin
+            inv_divisor = 22;
+        end else if (u==1 && v==3 ) begin
+            inv_divisor = 16;
+        end else if (u==2 && v==3 ) begin
+            inv_divisor = 10;
+        end else if (u==3 && v==3 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==3 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==3 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==3 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==3 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==1 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==2 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==3 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==4 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==1 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==2 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==3 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==5 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==1 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==2 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==3 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==6 ) begin
+            inv_divisor = 10;
+        end else if (u==0 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==1 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==2 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==3 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==4 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==5 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==6 && v==7 ) begin
+            inv_divisor = 10;
+        end else if (u==7 && v==7 ) begin
+            inv_divisor = 10;
+        end
+    end
+  end
+
 endmodule
 
 
