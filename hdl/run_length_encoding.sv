@@ -45,7 +45,7 @@ module rle_encoder (
                 prev_value <= data_in[count];
                 run_value[run_index] <= prev_value;
                 run_count[run_index] <= 0;
-                run_len <= 1; // Start the first run
+                run_len <= 0; // Start the first run
                 count<=count+1; 
                 first<=0; 
                 local_ct<=1; 
@@ -67,7 +67,7 @@ module rle_encoder (
             //last element 
             if (count == 63) begin
                 run_value[run_index] <= prev_value;
-                run_count[run_index] <= run_len;
+                run_count[run_index] <= run_len+2;
                 done <= 1;  
                 indiv_elms<=local_ct;
             end else begin
