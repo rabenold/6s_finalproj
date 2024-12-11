@@ -48,16 +48,6 @@ module top_level
   assign sys_rst_camera = btn[0]; //use for resetting camera side of logic
   assign sys_rst_pixel = btn[0]; //use for resetting hdmi/draw side of logic
 
-  // video signal generator signals
-  logic          hsync_hdmi;
-  logic          vsync_hdmi;
-  logic [10:0]  hcount_hdmi;
-  logic [9:0]    vcount_hdmi;
-  logic          active_draw_hdmi;
-  logic          new_frame_hdmi;
-  logic [5:0]    frame_count_hdmi;
-  logic          nf_hdmi;
-
   // rgb output values
   logic [7:0]          red,green,blue;
 
@@ -174,7 +164,74 @@ module top_level
   logic [FB_SIZE-1:0] addrb; //used to lookup address in memory for reading from buffer
   
   logic good_addrb; //used to indicate within valid frame for scaling
+  logic current_btn, prev_btn;
+  assign current_btn = btn[3] | btn[2] | btn[1];
 
+  always_ff @(posedge clk_pixel) begin
+    if (sys_rst_pixel) begin
+      prev_btn <= 0;
+    end else begin
+      prev_btn <= current_btn;
+    end
+  end
+
+  logic state;
+  logic [8:0] x_in, x_pixel;
+  logic [7:0] y_in, y_pixel;
+
+
+  logic [5:0] dct_block;
+  logic [2:0] dct_block_x, dct_block_y;
+  assign dct_block_x = dct_block[2:0];
+  assign dct_block_y = dct_block[5:3];
+
+  logic [5:0] x_dct; //0-39
+  logic [4:0] y_dct; //0-22
+
+  always_comb begin
+    dct_block_x = dct_block[2:0];
+    dct_block_y = dct_block[5:3];
+    x_in <= 8*x_dct+dct_block_x;
+    y_in <= 8*y_dct+dct_block_y;
+    x_pixel = x_in ? x_in < 320 : 319;
+    y_pixel = y_in ? y_in < 180 : 179;
+    addrb <= x_pixel + 320*y_pixel;
+  end
+  
+  always_ff @(posedge clk_pixel) begin
+    if (sys_rst_pixel) begin
+      state <= 0;
+      x_dct <= 0;
+      y_dct <= 0;
+      dct_block <= 0;
+      good_addrb <= 0;
+    end else begin
+      if (state==0) begin
+        if (prev_btn && ~current_btn) begin
+          state <= 1;
+          good_addrb <= 1;
+        end
+      end else begin
+
+        dct_block <= dct_block+1;
+        
+        if (dct_block == 63) begin
+          if (x_dct == 39) begin
+            x_dct <= 0;
+            if (y_dct == 22) begin
+              y_dct <= 0;
+              state <= 0;
+              good_addrb <= 0;
+            end else begin
+              y_dct <= y_dct + 1;
+            end
+          end else begin
+            x_dct <= x_dct+1;
+          end
+        end
+      end
+    end
+  end
 
   logic good_addrb_pipe [1:0];
   always_ff @(posedge clk_pixel)begin
@@ -193,45 +250,45 @@ module top_level
     fb_blue <= good_addrb_pipe[1]?{frame_buff_raw[4:0],3'b0}:8'b0;
   end
 
-  // RGB to YCrCb
-  //output of rgb to ycrcb conversion (10 bits):
-  logic [9:0] y_full, cr_full, cb_full; //ycrcb conversion of full pixel
-  //bottom 8 of y, cr, cb conversions:
+  logic [23:0] encoder_data_in;
+  assign encoder_data_in = {fb_red, fb_green, fb_blue}
 
-  //Module has a 3 cycle latency*** 
-  rgb_to_ycrcb rgbtoycrcb_m(
-    .clk_in(clk_pixel),
-    .r_in(fb_red),
-    .g_in(fb_green),
-    .b_in(fb_blue),
-    .y_out(y_full),
-    .cr_out(cr_full),
-    .cb_out(cb_full)
+  jpeg_encoder
+  (
+    .C_S00_AXIS_TDATA_WIDTH(24),
+    .C_M00_AXIS_TDATA_WIDTH(16)
+  )
+  encoder (
+  // Ports of Axi Slave Bus Interface S00_AXIS
+  .s00_axis_aclk(clk_pixel), 
+  .s00_axis_aresetn(~sys_rst_pixel),
+  .s00_axis_tlast(), 
+  .s00_axis_tvalid(good_addrb_pipe[1]),
+  .s00_axis_tdata(encoder_data_in),
+  .s00_axis_tstrb(16'hFFFF),
+  .s00_axis_tready(),
+ 
+  // Ports of Axi Master Bus Interface M00_AXIS
+  .m00_axis_aclk(clk_pixel), 
+  .m00_axis_aresetn(~sys_rst_pixel),
+  .m00_axis_tready(),
+  .m00_axis_tvalid(), 
+  .m00_axis_tlast(),
+  .m00_axis_tdata(),
+  .m00_axis_tstrb(),
+
   );
-//adjust this so that its more than one pixel at a time? or parallelize? idk we could instantiate n modules...
-// doing 8x8 in one pass takes 64 clock cycles. ugh 
 
-  // module minimum_coded_unit #
-  //   (parameter integer U_VALUE = 0,
-  //   parameter integer V_VALUE = 0
-  //   )
-  //   (
-  //     input wire clk_in,
-  //     input wire rst_in,
-  //     input wire ready_in,
-  //     input wire [7:0] pixel_val,
-  //     input wire [2:0] x,
-  //     input wire [2:0] y,
-  //     output logic [63:0] val_out,
-  //     output logic ready_out
-  //   );
-  
-
-
-
-
-
-
+  uart_transmit
+  #(.BAUD_RATE(25_000_000),
+    .INPUT_CLOCK_FREQ(50_000_000))
+   transmitter (
+    .clk_in(clk_pixel),
+    .rst_in(sys_rst_pixel),
+    .data_byte_in(),
+    .trigger_in(),
+    .busy_out(),
+    .tx_wire_out());
 
 
    // Nothing To Touch Down Here:
