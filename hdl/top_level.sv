@@ -48,7 +48,6 @@ module top_level
   assign sys_rst_camera = btn[0]; //use for resetting camera side of logic
   assign sys_rst_pixel = btn[0]; //use for resetting hdmi/draw side of logic
 
-
   // video signal generator signals
   logic          hsync_hdmi;
   logic          vsync_hdmi;
@@ -94,7 +93,6 @@ module top_level
      .pixel_vcount_out(camera_vcount),
      .pixel_data_out(camera_pixel));
 
-
   //two-port BRAM used to hold image from camera.
   //The camera is producing video at 720p and 30fps, but we can't store all of that
   //we're going to down-sample by a factor of 4 in both dimensions
@@ -121,7 +119,7 @@ module top_level
 
   logic start_save;
   
-
+//writes every fourth pixel 
   always_ff @(posedge clk_camera)begin
     if (sys_rst_camera) begin
       addra <= 0;
@@ -150,7 +148,6 @@ module top_level
       end
     end
   end
-  
 
   //frame buffer from IP
   blk_mem_gen_0 frame_buffer (
@@ -167,18 +164,19 @@ module top_level
     .enb(1'b1),
     .doutb(frame_buff_raw)
   );
+
+  //clocking off clk_pixel, whatever that is 
+
+  //convert to y channel... ideal
+  //now do we want to separate into ycbcr? or into matrices first? 
+
   logic [15:0] frame_buff_raw; //data out of frame buffer (565)
   logic [FB_SIZE-1:0] addrb; //used to lookup address in memory for reading from buffer
+  
   logic good_addrb; //used to indicate within valid frame for scaling
 
-  always_ff @(posedge clk_pixel)begin
-    // ELLIE : KEEP SCALING FOR NOW, DON"T SUPER CARE ABOUT HDMI LOL 
-      addrb <= (319-hcount_hdmi) + 320*vcount_hdmi;
-      good_addrb <= (hcount_hdmi<320)&&(vcount_hdmi<180);
-  end
 
   logic good_addrb_pipe [1:0];
-
   always_ff @(posedge clk_pixel)begin
     good_addrb_pipe[0] <= good_addrb;
     for (int i=1; i<2; i = i+1)begin
@@ -186,8 +184,7 @@ module top_level
     end
   end
 
-  
-  //split fame_buff into 3 8 bit color channels (5:6:5 adjusted accordingly)
+  //split frame_buff into 3 8 bit color channels (5:6:5 adjusted accordingly)
   //remapped frame_buffer outputs with 8 bits for r, g, b
   logic [7:0] fb_red, fb_green, fb_blue;
   always_ff @(posedge clk_pixel)begin
@@ -196,13 +193,11 @@ module top_level
     fb_blue <= good_addrb_pipe[1]?{frame_buff_raw[4:0],3'b0}:8'b0;
   end
 
-  // Processing pre-HDMI output
   // RGB to YCrCb
   //output of rgb to ycrcb conversion (10 bits):
   logic [9:0] y_full, cr_full, cb_full; //ycrcb conversion of full pixel
   //bottom 8 of y, cr, cb conversions:
-  logic [7:0] y, cr, cb; //ycrcb conversion of full pixel
-  //Convert RGB of full pixel to YCrCb
+
   //Module has a 3 cycle latency*** 
   rgb_to_ycrcb rgbtoycrcb_m(
     .clk_in(clk_pixel),
@@ -213,6 +208,30 @@ module top_level
     .cr_out(cr_full),
     .cb_out(cb_full)
   );
+//adjust this so that its more than one pixel at a time? or parallelize? idk we could instantiate n modules...
+// doing 8x8 in one pass takes 64 clock cycles. ugh 
+
+  // module minimum_coded_unit #
+  //   (parameter integer U_VALUE = 0,
+  //   parameter integer V_VALUE = 0
+  //   )
+  //   (
+  //     input wire clk_in,
+  //     input wire rst_in,
+  //     input wire ready_in,
+  //     input wire [7:0] pixel_val,
+  //     input wire [2:0] x,
+  //     input wire [2:0] y,
+  //     output logic [63:0] val_out,
+  //     output logic ready_out
+  //   );
+  
+
+
+
+
+
+
 
 
    // Nothing To Touch Down Here:
