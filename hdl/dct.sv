@@ -11,7 +11,8 @@ module minimum_coded_unit #
     input wire [7:0] pixel_val,
     input wire [2:0] x,
     input wire [2:0] y,
-    output logic [63:0] val_out,
+    input wire [9:0] quantizer,
+    output logic [10:0] val_out,
     output logic ready_out
   );
 
@@ -26,8 +27,25 @@ module minimum_coded_unit #
   logic signed [63:0] pre_out;
   logic signed [63:0] temp_val_out;
 
-  assign temp_val_out = $signed(pre_out>>>$signed(30));
-  assign val_out = temp_val_out;
+  //assign temp_val_out = $signed(pre_out>>>$signed(40));
+
+  logic round_up;
+  logic is_neg;
+  assign round_up = pre_out[39];
+  assign is_neg = pre_out[63];
+  always_comb begin
+    
+    if (is_neg) begin
+        temp_val_out = $signed((pre_out>>>$signed(40))+round_up);
+        //temp_val_out = $signed((pre_out>>>$signed(40)));
+    end else begin
+        temp_val_out = $signed((pre_out>>>$signed(40))+round_up);
+        //temp_val_out = $signed((pre_out>>>$signed(40)));
+    end
+
+  end
+
+  assign val_out = temp_val_out[10:0];
 
   logic [10:0] alpha_coeff;
   always_comb begin
@@ -39,6 +57,9 @@ module minimum_coded_unit #
         alpha_coeff = 181;
     end
   end
+
+  logic [20:0] quantized_alpha;
+
 
   assign horiz_cos_temp = (((x<<1)+1)*U_VALUE);
   assign vert_cos_temp = (((y<<1)+1)*V_VALUE);
@@ -52,12 +73,15 @@ module minimum_coded_unit #
   cosine_lut lut_vert(.clk_in(clk_in), .rst_in(rst_in), .phase_in(vert_cos_in), .amp_out(vert_cos_out));
 
   always_ff @(posedge clk_in) begin
+    
     if (rst_in) begin
         cum_sum <= 0;
         calc_out <= 0;
         pre_out <= 0;
         ready_out <= 0;
+        quantized_alpha <= 0;
     end else begin
+        quantized_alpha <= alpha_coeff*quantizer;
         if (ready_in) begin
             cum_sum <= cum_sum + horiz_cos_out*vert_cos_out*$signed(pixel_val);
         end else begin
@@ -69,7 +93,7 @@ module minimum_coded_unit #
             calc_out <= 0;
         end
         if (calc_out) begin
-            pre_out <= cum_sum*$signed(alpha_coeff);
+            pre_out <= cum_sum*$signed(quantized_alpha);
             calc_out <= 0;
             ready_out <= 1;
         end else begin
@@ -85,7 +109,7 @@ module dct_block #
   (
     parameter integer C_S00_AXIS_TDATA_WIDTH  = 64,
     parameter integer C_M00_AXIS_TDATA_WIDTH  = 64,
-    parameter IS_CHROMINANCE = 0,
+    parameter logic IS_CHROMINANCE = 0
   )
   (
   // Ports of Axi Slave Bus Interface S00_AXIS
@@ -100,12 +124,16 @@ module dct_block #
   input wire  m00_axis_tready,
   output logic  m00_axis_tvalid, m00_axis_tlast,
   output logic [C_M00_AXIS_TDATA_WIDTH-1 : 0] m00_axis_tdata,
-  output logic [(C_M00_AXIS_TDATA_WIDTH/8)-1: 0] m00_axis_tstrb
+  output logic [(C_M00_AXIS_TDATA_WIDTH/8)-1: 0] m00_axis_tstrb,
+  
+  //non AXI outputs for actual use
+  output logic [10:0] dct_out [7:0][7:0],
+  output logic dct_out_ready
   );
 
   logic ready_in [7:0][7:0];
   logic ready_out [7:0][7:0];
-  logic signed [63:0] val_out [7:0][7:0];
+  logic signed [10:0] val_out [7:0][7:0];
   logic [9:0] quant_divisor [7:0][7:0];
   logic [2:0] current_x, current_y;
   logic [7:0] pixel;
@@ -131,6 +159,7 @@ module dct_block #
                 .pixel_val(pixel),
                 .x(current_x),
                 .y(current_y),
+                .quantizer(quant_divisor[u][v]),
                 .val_out(val_out[u][v]),
                 .ready_out(ready_out[u][v])
             );
@@ -145,6 +174,7 @@ module dct_block #
             always_ff @(posedge s00_axis_aclk) begin
                 if (~s00_axis_aresetn) begin
                     ready_in[u][v] <= 0;
+                    dct_out[u][v] <= 0;
                 end else begin
                     if (m00_axis_tready) begin
                         if (s00_axis_tvalid) begin
@@ -156,8 +186,9 @@ module dct_block #
                         end
 
                         if (ready_out[u][v]) begin
-                            
+
                             completed_dct[(v<<3)+u] <= 1'b1;
+                            dct_out[u][v] <= val_out[u][v];
                         end
                     end
                 end
@@ -179,6 +210,7 @@ module dct_block #
         out_y_count <= 0;
         m00_axis_tvalid <= 0;
         delivered_last <= 0;
+        dct_out_ready <= 0;
     end else begin
         if (m00_axis_tready) begin
             if (s00_axis_tvalid) begin
@@ -191,8 +223,10 @@ module dct_block #
                 end
             end
             if (completed_dct == 64'hffff_ffff_ffff_ffff) begin
+                dct_out_ready <= 1;
+
                 
-                m00_axis_tdata <= val_out[out_x_count][out_y_count];
+                m00_axis_tdata <= $signed(val_out[out_x_count][out_y_count]);
 
                 if (out_x_count==7 && out_y_count == 7) begin
                     delivered_last <= 1'b1;
