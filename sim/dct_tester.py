@@ -33,14 +33,25 @@ from scipy.fft import fft, fftfreq
 #          5.01269392e-01,  1.67545882e+00]])
 
 
-exact_output = [[-416,  -31,  -62,   27,   56,  -21,   -3,    0],
- [   4,  -22,  -61,   10,   13,   -8,   -9,    4],
- [ -47,    7,   77,  -25,  -29,    9,    5,   -6],
- [ -49,   12,   34,  -15,  -11,    6,    1,    1],
- [  12,   -7,  -14,   -4,   -2,    1,   -3,    3],
- [  -8,    2,    2,   -6,   -3,    0,    4,    1],
- [  -1,    0,    0,   -3,   -1,   -4,    4,   -1],
- [  -1,    0,   -2,   -5,   -2,   -1,    0,    1]]
+# exact_output = [[-416,  -31,  -62,   27,   56,  -21,   -3,    0],
+#  [   4,  -22,  -61,   10,   13,   -8,   -9,    4],
+#  [ -47,    7,   77,  -25,  -29,    9,    5,   -6],
+#  [ -49,   12,   34,  -15,  -11,    6,    1,    1],
+#  [  12,   -7,  -14,   -4,   -2,    1,   -3,    3],
+#  [  -8,    2,    2,   -6,   -3,    0,    4,    1],
+#  [  -1,    0,    0,   -3,   -1,   -4,    4,   -1],
+#  [  -1,    0,   -2,   -5,   -2,   -1,    0,    1]]
+
+exact_output = np.array([
+    [-26, -3, -6, 2, 2, -1, 0, 0],
+    [0, -2, -4, 1, 1, 0, 0, 0],
+    [-3, 1, 5, -1, -1, 0, 0, 0],
+    [-3, 1, 2, -1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0]
+])
 
 class Tester:
     """
@@ -102,6 +113,6 @@ class Tester:
       expected_output = self.expected_output.pop(0)
       
       # print(f"Expected {expected_output}, got {actual_output} giving {abs(actual_output-expected_output)}")
-      assert abs(actual_output-expected_output) < 1, f"Expected {expected_output}, got {actual_output} which wasn't close enough"
+      assert abs(actual_output-expected_output) < 1, f"{idx}: Expected {expected_output}, got {actual_output} (which is {got['data']} in binary) which wasn't close enough"
       
 
