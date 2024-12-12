@@ -2,7 +2,7 @@ module huffman_lut (
     input logic [7:0] value,
     input logic [7:0] count,
     output logic [15:0] huff_code 
-)
+);
 
 //bigass lut for huffman codes 
 // from https://www.w3.org/Graphics/JPEG/itu-t81.pdf

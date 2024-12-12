@@ -16,11 +16,7 @@ module huffman_encoding(
     logic [7:0] local_count_in;
     logic [15:0] local_huff_code; 
 
-    huffman_lut lut_inst (
-        .value(local_val_in),        // Input value
-        .count(local_huff_code),        // Input count
-        .huff_code(local_huff_code)       // Output huffman code
-    );
+    huffman_lut lut_inst (.value(local_val_in),.count(local_huff_code),.huff_code(local_huff_code));
 
     // input logic [7:0] value, 
     // input logic [7:0] count,
