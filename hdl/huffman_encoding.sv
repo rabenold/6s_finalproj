@@ -3,6 +3,8 @@
 
 module huffman_encoding(
     input logic start,
+    input logic clk_in,
+    input logic rst_in,
     input logic [7:0] value_in [0:63],   // value array 
     input logic [7:0] count_in [0:63],   // count array 
     output logic [15:0] code_out [0:63],   // 16 * 64
@@ -14,17 +16,30 @@ module huffman_encoding(
     logic [15:0] local_huff_code; 
 
 
-    huffman_lut lut_inst (.value(local_val_in),.count(local_val_in),.huff_code(local_huff_code));
+    huffman_lut lut_inst (.value(local_val_in),.count(local_count_in),.huff_code(local_huff_code));
    
+    logic [7:0] i;
     always_comb begin
-        if(start)
-            if(i < 64)begin
-                local_val_in = value_in[i];
-                local_count_in = count_in[i]; 
-                code_out[i] = local_huff_code; 
-                i= i +1; 
+        code_out[i] = local_huff_code;
+    end
+    
+    always_ff @(posedge clk_in) begin
+        if (rst_in) begin
+            i <= 0;
+            //local_huff_code <= 0;
+            local_val_in <= 0;
+            done <= 0;
+        end else begin
+            if (start) begin
+                if (i < 64) begin
+                local_val_in <= value_in[i];
+                local_count_in = count_in[i];
+                i <= i+1;
+                end else begin
+                    done <= 1;
+                end
             end
-            done = 1; 
+        end
     end 
     endmodule 
 

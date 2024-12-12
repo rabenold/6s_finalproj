@@ -206,27 +206,29 @@ module top_level
       dct_block <= 0;
       good_addrb <= 0;
     end else begin
-      if (state==0) begin
-        if (prev_btn && ~current_btn) begin
-          state <= 1;
-          good_addrb <= 1;
-        end
-      end else begin
+      if (encoder_ready) begin
+        if (state==0) begin
+          if (prev_btn && ~current_btn) begin
+            state <= 1;
+            good_addrb <= 1;
+          end
+        end else begin
 
-        dct_block <= dct_block+1;
-        
-        if (dct_block == 63) begin
-          if (x_dct == 39) begin
-            x_dct <= 0;
-            if (y_dct == 22) begin
-              y_dct <= 0;
-              state <= 0;
-              good_addrb <= 0;
+          dct_block <= dct_block+1;
+          
+          if (dct_block == 63) begin
+            if (x_dct == 39) begin
+              x_dct <= 0;
+              if (y_dct == 22) begin
+                y_dct <= 0;
+                state <= 0;
+                good_addrb <= 0;
+              end else begin
+                y_dct <= y_dct + 1;
+              end
             end else begin
-              y_dct <= y_dct + 1;
+              x_dct <= x_dct+1;
             end
-          end else begin
-            x_dct <= x_dct+1;
           end
         end
       end
@@ -251,7 +253,8 @@ module top_level
   end
 
   logic [23:0] encoder_data_in;
-  assign encoder_data_in = {fb_red, fb_green, fb_blue}
+  assign encoder_data_in = {fb_red, fb_green, fb_blue};
+  logic encoder_ready;
 
   jpeg_encoder
   (
@@ -266,7 +269,7 @@ module top_level
   .s00_axis_tvalid(good_addrb_pipe[1]),
   .s00_axis_tdata(encoder_data_in),
   .s00_axis_tstrb(16'hFFFF),
-  .s00_axis_tready(),
+  .s00_axis_tready(encoder_ready),
  
   // Ports of Axi Master Bus Interface M00_AXIS
   .m00_axis_aclk(clk_pixel), 

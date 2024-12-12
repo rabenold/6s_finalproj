@@ -48,12 +48,14 @@ async def rle_test(dut):
     value = [5, 1, 2, 1, 5, 4, 3, 1, 3, 1, 5, 0, 3, 5, 1, 2, 5, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     count = [3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-   
+    await cocotb.start(generate_clock(dut.clk_in))
+    await reset(dut)
     print("FED DATA IN")
     while not dut.done.value:
         dut.start.value = 1
         dut.value_in.value = value
         dut.count_in.value = count
+
         await Timer(1,units="ns")
     await Timer(1,units="ns")
     dut.start.value = 0

@@ -29,6 +29,10 @@ module jpeg_encoder
   //fill a frame buffer using one clock
   //use the push of a button to start reading from the frame buffer
 
+  //OR a bunch of stuff together
+  logic dct_s00_axis_tready;
+  assign s00_axis_tready = dct_s00_axis_tready;
+
   logic [7:0] r_in, g_in, b_in;
     assign r_in = s00_axis_tdata[23:16];
     assign g_in = s00_axis_tdata[15:8];
@@ -98,7 +102,7 @@ module jpeg_encoder
   .s00_axis_tvalid(valid_pixel),
   .s00_axis_tdata(pixel_in),
   .s00_axis_tstrb(s00_axis_tstrb),
-  .s00_axis_tready(),
+  .s00_axis_tready(dct_s00_axis_tready),
  
   // Ports of Axi Master Bus Interface M00_AXIS
   .m00_axis_aclk(), 
