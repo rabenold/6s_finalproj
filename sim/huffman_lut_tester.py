@@ -56,8 +56,7 @@ async def rle_test(dut):
         dut.value.value = i
         dut.count.value = x
         print(i,x)
-        while not dut.done.value:
-            await Timer(2,units="ns")
+        await Timer(1,units="ns")
         print(dut.huff_code.value)
         arr.append(str(dut.huff_code.value))
 

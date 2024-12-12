@@ -2,13 +2,13 @@
 module huffman_lut (
     input logic [7:0] value,
     input logic [7:0] count,
-    output logic [15:0] huff_code, 
-    output logic done
+    output logic [15:0] huff_code
 );
 
 //bigass lut for huffman codes 
 // from https://www.w3.org/Graphics/JPEG/itu-t81.pdf
-//(run,size) 
+//(run,size) \
+
 always_comb begin
     if (value == 8'b0 && count == 0)begin
         huff_code = 1'b0;
@@ -291,8 +291,5 @@ always_comb begin
         huff_code = 16'b1111111111111110;
     end else
         huff_code = 16'b0; 
-    done = 1; 
 end 
-
-
 endmodule
